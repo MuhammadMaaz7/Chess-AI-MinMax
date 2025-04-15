@@ -9,6 +9,15 @@ pieces = {
 '.': '·'
 }
 
+playerCastlingDone = False
+playerKingMoved = False
+playerRook1Moved = False
+playerRook2Moved = False
+
+oppeonentCastlingDone = False
+oppeonentKingMoved = False
+oppeonentRook1Moved = False
+oppeonentRook2Moved = False
 
 def display_board(board):
     print("   ┌" + "───┬" * 7 + "───┐")
@@ -35,18 +44,31 @@ def displayBoard(board):
     print("  a b c d e f g h")
     print()
 
-def moveUserInput():
+def moveUserInput(board,player):
     rows = ['a','b','c','d','e','f','g','h']
     cols = ['1','2','3','4','5','6','7','8']
+    
+    player1Pieces =  ['r', 'n', 'b', 'q', 'k', 'p']
+    player2Pieces =  ['R', 'N', 'B', 'Q', 'K', 'P']
     
     source = input("Enter the location(e.q e2,b5) of the piece you want to move: ")
     destination = input("Enter the location(e.q e2,b5) where you want to move the piece: ")
     
     while True:
+        iSrc,jSrc = convertLocation(source)
+        iDest,jDest = convertLocation(destination)
+        toMove = board[iSrc][jSrc]
+    
         if source[0] not in rows or source[1] not in cols:
             source = input("Inavlid location, enter source again: ")
         elif destination[0] not in rows or destination[1] not in cols:
             destination = input("Inavlid location, enter destination again: ")
+        elif player==1 and toMove in player2Pieces:
+            source = input("Opponent piece selected, enter source again: ")
+            destination = input("Enter destination again: ")
+        elif player==2 and toMove in player1Pieces:
+            source = input("Opponent piece selected, enter source again: ")
+            destination = input("Enter destination again: ")
         else:
             break
 
@@ -58,51 +80,44 @@ def convertLocation(loc):
     col = int(cols[loc[0]]) - 1
     
     return row,col
-    
 
-def move(board,src,dest):
+def indexToLocation(i, j):
+    cols = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    row = str(8 - i)
+    col = cols[j]
+
+    return col + row
+
+
+def playerMove(board,src,dest):
+    ownPieces =  ['r', 'n', 'b', 'q', 'k', 'p']
+    opponentPieces = ['R', 'N', 'B', 'Q', 'K', 'P']
     iSrc,jSrc = convertLocation(src)
     iDest,jDest = convertLocation(dest)
     toPlace = board[iSrc][jSrc]
     
-    #check which piece is on the source, then send the src and destination in the checkValid function of that piece
-    # print("To place: ", toPlace)
     valid = False
     
-    # if opponentOrOwnPiece(board,src,dest):
-    #     if toPlace == 'p':
-    #         valid = validMovePawn(src,dest)
-    #     elif toPlace == 'r':
-    #         valid = validMoveRook(src,dest)
-    #     elif toPlace == 'n':
-    #         valid = validMoveKnight(src,dest)
-    #     elif toPlace == 'b':
-    #         valid = validMoveBishop(src,dest)
-    #     elif toPlace == 'q':
-    #         valid = validMoveQueen(src,dest)
-    #     elif toPlace == 'k':
-    #         valid = validMoveKing(src,dest)
-    #     elif toPlace == '.':
-    #         valid = False
-
-
-    # Just for now to run both oponent and me manually
-    if toPlace == 'p':
-        valid = validMovePawn(board,src,dest)
-    if toPlace == 'P':
-        valid = opponentValidMovePawn(board,src,dest)
-    elif toPlace == 'r' or toPlace == 'R':
-        valid = validMoveRook(board,src,dest)
-    elif toPlace == 'n' or toPlace == 'N':
-        valid = validMoveKnight(src,dest)
-    elif toPlace == 'b' or toPlace == 'B':
-        valid = validMoveBishop(board,src,dest)
-    elif toPlace == 'q' or toPlace == 'Q':
-        valid = validMoveQueen(src,dest)
-    elif toPlace == 'k' or toPlace == 'K':
-        valid = validMoveKing(src,dest)
-    elif toPlace == '.':
-        valid = False
+    checkCheck(board,src,opponentPieces)
+    
+    if opponentOrOwnPiece(board,src,dest,ownPieces):
+        if toPlace == 'p':
+            valid = validMovePawn(board,src,dest)
+        elif toPlace == 'r':
+            valid = validMoveRook(board,src,dest)
+        elif toPlace == 'n':
+            valid = validMoveKnight(src,dest)
+        elif toPlace == 'b':
+            valid = validMoveBishop(board,src,dest)
+        elif toPlace == 'q':
+            valid = validMoveQueen(board,src,dest)
+        elif toPlace == 'k':
+            valid = validMoveKing(board,src,dest)
+        elif toPlace == '.':
+            valid = False
+        
+    if valid == "castlingMove":
+        return
     
     if valid:
         board[iSrc][jSrc] = '.'
@@ -110,9 +125,117 @@ def move(board,src,dest):
     else:
         print("invalid move")
         return
+    
+def opponentMove(board,src,dest):
+    ownPieces =  ['R', 'N', 'B', 'Q', 'K', 'P']
+    opponentPieces = ['r', 'n', 'b', 'q', 'k', 'p']
+    iSrc,jSrc = convertLocation(src)
+    iDest,jDest = convertLocation(dest)
+    toPlace = board[iSrc][jSrc]
+    
+    valid = False
+    
+    checkCheck(board,src,opponentPieces)
+    
+    if opponentOrOwnPiece(board,src,dest,ownPieces):
+        if toPlace == 'P':
+            valid = opponentValidMovePawn(board,src,dest)
+        elif toPlace == 'R':
+            valid = validMoveRook(board,src,dest)
+        elif toPlace == 'N':
+            valid = validMoveKnight(src,dest)
+        elif toPlace == 'B':
+            valid = validMoveBishop(board,src,dest)
+        elif toPlace == 'Q':
+            valid = validMoveQueen(board,src,dest)
+        elif toPlace == 'K':
+            valid = validMoveKing(board,src,dest)
+        elif toPlace == '.':
+            valid = False
+        
+    if valid == "castlingMove":
+        return
+    
+    if valid:
+        board[iSrc][jSrc] = '.'
+        board[iDest][jDest] = toPlace
+    else:
+        print("invalid move")
+        return
+    
+def checkCheck(board,src,opponentPieces):
+    iSrc,jSrc = convertLocation(src)
+    
+    if board[iSrc][jSrc] != 'k' or board[iSrc][jSrc] != 'K':
+        return False
+    
+    downStep = 1
+    upStep = -1
+    rightStep = 1
+    leftStep = -1
+    
+    # downCheck 
+    for i in range(iSrc+1,8,downStep):
+        if board[i][jSrc] in opponentPieces:
+            threatLocation = indexToLocation(i,jSrc)
+            threatBool = checkThreat(board,src,threatLocation,opponentPieces)
+            if threatBool:
+                print("check")
+    
+    #upCheck
+    for i in range(iSrc-1,-1,upStep):
+        if board[i][jSrc] in opponentPieces:
+            threatLocation = indexToLocation(i,jSrc)
+            threatBool = checkThreat(board,src,threatLocation,opponentPieces)
+            if threatBool:
+                print("check")
 
-def opponentOrOwnPiece(board,src,dest):
-    ownPieces =  ['r', 'n', 'b', 'q', 'k', 'p']
+    # rightCheck                
+    for j in range(jSrc+1,8,rightStep):
+        if board[iSrc][j] in opponentPieces:
+            threatLocation = indexToLocation(iSrc,j)
+            threatBool = checkThreat(board,src,threatLocation,opponentPieces)
+            if threatBool:
+                print("check")
+    
+    for j in range(jSrc-1,-1,leftStep):
+        if board[iSrc][j] in opponentPieces:
+            threatLocation = indexToLocation(iSrc,j)
+            threatBool = checkThreat(board,src,threatLocation,opponentPieces)
+            if threatBool:
+                print("check")
+            
+   
+def checkThreat(board,kingLocation,threatLocation,opponentPieces):
+    # iKing,jKing = convertLocation(kingLocation)
+    iThreat,jThreat = convertLocation(threatLocation)
+    threat = board[iThreat][jThreat]
+
+    if threat not in opponentPieces:
+        return False
+    
+    if threat == 'p':
+        valid = validMovePawn(threatLocation,kingLocation)
+    elif threat == 'P':
+        valid = opponentValidMovePawn(threatLocation,kingLocation)
+    elif threat == 'r' or threat == 'R':
+        valid = validMoveRook(threatLocation,kingLocation)
+    elif threat == 'n' or threat == 'N':
+        valid = validMoveKnight(threatLocation,kingLocation)
+    elif threat == 'b' or threat == 'B':
+        valid = validMoveBishop(threatLocation,kingLocation)
+    elif threat == 'q' or threat == 'Q':
+        valid = validMoveQueen(threatLocation,kingLocation)
+    elif threat == 'k' or threat == 'K':
+        valid = validMoveKing(threatLocation,kingLocation)
+    elif threat == '.':
+        valid = False
+            
+    return valid
+    
+    
+
+def opponentOrOwnPiece(board,src,dest,ownPieces):
     iDest, jDest = convertLocation(dest)
     pieceOnDest = board[iDest][jDest]
     
@@ -122,7 +245,6 @@ def opponentOrOwnPiece(board,src,dest):
         return True 
 
 def validMovePawn(board,src,dest):
-    #Problem: if opponent piece in next place, then cant move
     opponentPieces =  ['R', 'N', 'B', 'Q', 'K', 'P']
     iSrc,jSrc = convertLocation(src)
     iDest, jDest = convertLocation(dest)
@@ -140,16 +262,15 @@ def validMovePawn(board,src,dest):
             else:
                 return False
     elif diagnol1 in opponentPieces and iDest == iSrc - 1 and jDest == jSrc - 1:
-        print(diagnol1)
         return True
     elif diagnol2 in opponentPieces and iDest == iSrc - 1 and jDest == jSrc + 1:
-        print(diagnol2)
         return True
     else:
         return False
     
+    # Pawn promotion to be implemented, when reached at the end of opposite side
+    
 def opponentValidMovePawn(board,src,dest):
-    #Problem: if opponent piece in next place, then cant move
     opponentPieces =  ['r', 'n', 'b', 'q', 'k', 'p']
     iSrc,jSrc = convertLocation(src)
     iDest, jDest = convertLocation(dest)
@@ -167,10 +288,8 @@ def opponentValidMovePawn(board,src,dest):
             else:
                 return False
     elif diagnol1 in opponentPieces and iDest == iSrc + 1 and jDest == jSrc - 1:
-        print(diagnol1)
         return True
     elif diagnol2 in opponentPieces and iDest == iSrc + 1 and jDest == jSrc + 1:
-        print(diagnol2)
         return True
     else:
         return False
@@ -288,17 +407,68 @@ def validMoveBishop(board,src,dest):
         
     return valid
 
-def validMoveQueen(src,dest):
-    if validMoveBishop(src,dest):
+def validMoveQueen(board,src,dest):
+    if validMoveBishop(board,src,dest):
         return True
-    elif validMoveRook(src,dest):
+    elif validMoveRook(board,src,dest):
         return True
     else:
         return False
 
-def validMoveKing(src,dest):
+def validMoveKing(board,src,dest):
+    global playerKingMoved, playerRook1Moved, playerRook2Moved, playerCastlingDone
+    global oppeonentCastlingDone, oppeonentKingMoved, oppeonentRook1Moved, oppeonentRook2Moved
+    
     iSrc,jSrc = convertLocation(src)
     iDest,jDest = convertLocation(dest)
+    
+    if playerCastlingDone == False:
+        if (src == 'e1' and dest == 'h1') or (src == 'h1' and dest == 'e1'):
+            if playerKingMoved == False and playerRook2Moved == False:
+                if board[7][5] == '.' and board[7][6] == '.':
+                    board[7][5] = 'r'
+                    board[7][6] = 'k'
+                    board[iSrc][jSrc] = '.'
+                    board[iDest][jDest] = '.'
+                    playerKingMoved = True
+                    playerRook2Moved = True
+                    playerCastlingDone = True
+                    return "castlingMove"
+        if (src == 'e1' and dest == 'a1') or (src == 'a1' and dest == 'e1') :
+            if playerKingMoved == False and playerRook1Moved == False:
+                if board[7][3] == '.' and board[7][2] == '.' and board[7][1] == '.':
+                    board[7][3] = 'r'
+                    board[7][2] = 'k'
+                    board[iSrc][jSrc] = '.'
+                    board[iDest][jDest] = '.'
+                    playerKingMoved = True
+                    playerRook1Moved = True
+                    playerCastlingDone = True
+                    return "castlingMove"
+    
+    if oppeonentCastlingDone == False:
+        if (src == 'e8' and dest == 'h8') or (src == 'h8' and dest == 'e8'):
+            if oppeonentKingMoved == False and oppeonentRook2Moved == False:
+                if board[0][5] == '.' and board[0][6] == '.':
+                    board[0][5] = 'r'
+                    board[0][6] = 'k'
+                    board[iSrc][jSrc] = '.'
+                    board[iDest][jDest] = '.'
+                    oppeonentKingMoved = True
+                    oppeonentRook2Moved = True
+                    oppeonentCastlingDone = True
+                    return "castlingMove"
+        if (src == 'e8' and dest == 'a8') or (src == 'a8' and dest == 'e8'):
+            if oppeonentKingMoved == False and oppeonentRook1Moved == False:
+                if board[0][3] == '.' and board[0][2] == '.' and board[0][1] == '.':
+                    board[0][3] = 'r'
+                    board[0][2] = 'k'
+                    board[iSrc][jSrc] = '.'
+                    board[iDest][jDest] = '.'
+                    oppeonentKingMoved = True
+                    oppeonentRook1Moved = True
+                    oppeonentCastlingDone = True
+                    return "castlingMove"
     
     if iDest == iSrc-1 and jDest == jSrc:
         return True
@@ -333,10 +503,17 @@ def main():
         ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
     ]
     while True:
-        # display_board(board)
-        src,dest = moveUserInput()
-        move(board,src,dest)
+        print("Player 1 Turn")
+        src,dest = moveUserInput(board, player=1)
+        playerMove(board,src,dest)
+        display_board(board)        
+        
+        print("Player 2 Turn")
+        src,dest = moveUserInput(board, player=2)
+        opponentMove(board,src,dest)
         display_board(board)
 
 
 main()
+
+# print(indexToLocation(0,0))
